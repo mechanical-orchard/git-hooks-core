@@ -23,25 +23,21 @@ report_status() {
 
 trap report_status EXIT
 
-pushd $(git rev-parse --show-toplevel)
-  mix compile --warnings-as-errors
-  mix format --check-formatted
-  mix dialyzer
-  mix test
+mix test
+mix format --check-formatted
+mix compile --warnings-as-errors
+mix dialyzer
 
-  echo -e "\n✅ Code compiles without warnings and tests pass.\n\n🚀 Safe to push even if other checks fail.\n\n"
+# Got some things we need to address before we can enable this.
+# mix credo --strict
 
-  # Got some things we need to address before we can enable this.
-  # mix credo --strict
+# If the script stops here you'll need to:
+# 1. Unlock the dependency `mix deps.unlock some_dep`
+# 2. Remove the dependency `mix deps.clean some_dep`
+mix deps.unlock --check-unused
 
-  # If the script stops here you'll need to:
-  # 1. Unlock the dependency `mix deps.unlock some_dep`
-  # 2. Remove the dependency `mix deps.clean some_dep`
-  mix deps.unlock --check-unused
-
-  # Including this locally, but not in the CI pipeline.
-  # It's last in the list so you can ignore it,
-  # but it's there as a friendly reminder.
-  # mix hex.outdated
-popd
+# Including this locally, but not in the CI pipeline.
+# It's last in the list so you can ignore it,
+# but it's there as a friendly reminder.
+# mix hex.outdated
 
