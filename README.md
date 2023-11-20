@@ -19,16 +19,6 @@ And now that the hooks dir is outside of your repository, you can commit the glo
 
 ## INSTALLATION
 
-### Installing cred-alert-cli
-
-This repo comes with some hooks that depend on `cred-alert-cli`.
-
-To install the `cred-alert-cli` binary, view the [latest release on GitHub](
-https://github.com/pivotal-cf/cred-alert/releases/latest) and download either
-`cred-alert-cli_darwin` (for macOS) or `cred-alert-cli_linux` (for Linux).
-Rename it to `cred-alert-cli`, make it executable, and move it to a directory
-in `${PATH}`.
-
 ### Installing git-hooks-core
 
 Clone this repo to your directory of choice, e.g. $HOME/workspace/git-hooks-core.
