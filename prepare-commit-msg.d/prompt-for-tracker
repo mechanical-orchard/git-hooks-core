@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+
+COMMIT_MSG_FILE=$1
+COMMIT_SOURCE=$2
+
+if [[ -n "${COMMIT_SOURCE}" && "${COMMIT_SOURCE}" != template ]]; then
+  # If the commit source is blank, then the commit message is being created from scratch
+  echo "User is editing an existing commit or has provided a message via -m or in the middle of a rebase/merge/etc."
+  exit 0
+fi
+
+function format_tracker_response {
+  jq -r '.[] | "\(.id): \(.name)"'
+}
+
+function extract_issue_id {
+  sed -E -e 's/^([[:digit:]]+):.+$/#\1/'
+}
+
+function convert_newlines_to_commas {
+  tr '\n' ','
+}
+
+function format_to_list_with_brackets {
+  sed -E -e 's/^(.*),$/[\1]/'
+}
+
+if [[ -z "$PIVOTAL_TRACKER_TOKEN" || -z "$PIVOTAL_TRACKER_PROJECT_ID" ]]; then
+  echo "WARNING: Can't prompt for Pivotal Tracker id without \$PIVOTAL_TRACKER_TOKEN "
+  echo "or \$PIVOTAL_TRACKER_PROJECT_ID"
+  echo "Please include this variable in your .envrc."
+  exit 1
+fi
+if [[ -z "$(command -v jq)" ]]; then
+  echo "WARNING: Can't prompt for Pivotal Tracker id without installing jq."
+  echo "Please brew install jq."
+  exit 1
+fi
+if [[ -z "$(command -v fzf)" ]]; then
+  echo "WARNING: Can't prompt for Pivotal Tracker id without installing fzf."
+  echo "Please brew install fzf."
+  exit 1
+fi
+
+ISSUE_ID=$( \
+  curl -sfG -X GET -H "X-TrackerToken: $PIVOTAL_TRACKER_TOKEN" \
+    --data-urlencode "filter=state:started" \
+    --data-urlencode fields=name https://www.pivotaltracker.com/services/v5/projects/$PIVOTAL_TRACKER_PROJECT_ID/stories \
+  | format_tracker_response \
+  | fzf --multi \
+  | extract_issue_id \
+  | convert_newlines_to_commas \
+  | format_to_list_with_brackets
+)
+if [[ ! -z "$ISSUE_ID" ]]; then
+  FILE="$COMMIT_MSG_FILE"
+  cat $FILE > /tmp/filecontents
+  printf "\n\n" > $FILE
+  echo $ISSUE_ID >> $FILE
+  cat /tmp/filecontents | tail -n +2 >> $FILE
+  rm /tmp/filecontents
+else
+  echo "You didn't pick a Pivotal Tracker issue ಠ_ಠ"
+  exit 0
+fi
