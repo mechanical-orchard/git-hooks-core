@@ -43,21 +43,25 @@ if [[ -z "$(command -v fzf)" ]]; then
   exit 1
 fi
 
-ISSUE_ID=$( \
+ISSUE_IDS=$( \
   curl -sfG -X GET -H "X-TrackerToken: $PIVOTAL_TRACKER_TOKEN" \
     --data-urlencode "filter=state:started" \
     --data-urlencode fields=name https://www.pivotaltracker.com/services/v5/projects/$PIVOTAL_TRACKER_PROJECT_ID/stories \
   | format_tracker_response \
   | fzf --multi \
   | extract_issue_id \
-  | convert_newlines_to_commas \
-  | format_to_list_with_brackets
+  | convert_newlines_to_commas
 )
-if [[ ! -z "$ISSUE_ID" ]]; then
+
+if [[ ! -z "$ISSUE_IDS" ]]; then
   FILE="$COMMIT_MSG_FILE"
   cat $FILE > /tmp/filecontents
   printf "\n\n" > $FILE
-  echo $ISSUE_ID >> $FILE
+  IFS=',' read -ra ISSUE_ID_ARRAY <<< "$ISSUE_IDS"
+  for ISSUE_ID in "${ISSUE_ID_ARRAY[@]}"; do
+    numeric_issue_id=${ISSUE_ID//[^0-9]/}
+    echo "[$ISSUE_ID](https://www.pivotaltracker.com/n/projects/$numeric_issue_id)" >> $FILE
+  done
   cat /tmp/filecontents | tail -n +2 >> $FILE
   rm /tmp/filecontents
 else
